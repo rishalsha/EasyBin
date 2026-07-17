@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EasyBin — Realtime Clipboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="glass-bg"></div>
+  <div class="app-container">
+    <header>
+      <div class="logo-area" onclick="goHome()">
+        <span class="logo-icon">📋</span>
+        <h1>EasyBin</h1>
+      </div>
+      <div class="header-actions">
+        <div id="status-badge" class="badge disconnected">● Connecting...</div>
+      </div>
+    </header>
+
+    <main>
+      <!-- HOME VIEW -->
+      <section id="home-view" class="view active">
+        <div class="hero">
+          <h2>An Instant, Real-Time Clipboard.</h2>
+          <p>Paste text here to instantly share across devices, or enter a bin code below.</p>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="card create-card">
+            <div class="card-info">
+              <h3>Create a New Bin</h3>
+              <p class="card-desc">Instantly spawn a fresh, collaborative clipboard bin and start typing.</p>
+            </div>
+            <button class="btn btn-primary" onclick="createNewBin()">Create Instant Bin</button>
+          </div>
+
+          <div class="card access-card">
+            <div class="card-info">
+              <h3>Access Existing Bin</h3>
+              <p class="card-desc">Enter a 6-character code to retrieve or edit an existing clipboard.</p>
+            </div>
+            <div class="input-group">
+              <input type="text" id="bin-code-input" placeholder="Enter 6-char code..." maxlength="6" autocomplete="off">
+              <button class="btn btn-secondary" onclick="accessBin()">Open</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- EDITOR VIEW -->
+      <section id="editor-view" class="view">
+        <div class="editor-header">
+          <div class="bin-info">
+            <span class="bin-label">Bin Code:</span>
+            <span id="current-bin-code" class="bin-code">------</span>
+            <button class="btn btn-icon" onclick="copyBinCode()" title="Copy Code">📋 Copy Code</button>
+            <button class="btn btn-icon" onclick="copyBinLink()" title="Copy Link">🔗 Copy Link</button>
+          </div>
+          <div class="editor-actions">
+            <span id="save-status" class="save-status">Saved</span>
+            <button class="btn btn-secondary" onclick="copyBinContent()">Copy Text</button>
+          </div>
+        </div>
+
+        <div class="editor-container">
+          <textarea id="editor" placeholder="Start typing here... changes will sync in real-time across all connected devices." autofocus></textarea>
+        </div>
+
+        <div class="cli-instructions">
+          <h4>💻 Terminal Integration</h4>
+          <p class="cli-desc">Interact with this bin from your terminal using curl:</p>
+          <div class="code-block-container">
+            <pre><code id="curl-example">curl -X POST -d "your content" http://localhost:3000/</code></pre>
+            <button class="btn btn-sm btn-secondary" onclick="copyCurlExample()">Copy</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>EasyBin — Built for speed and simplicity. Backed by real-time WebSockets.</p>
+    </footer>
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: easybin
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 10000

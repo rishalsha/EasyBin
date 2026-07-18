@@ -5,7 +5,6 @@ const statusBadge = document.getElementById('status-badge');
 const saveStatus = document.getElementById('save-status');
 const editor = document.getElementById('editor');
 const binCodeDisplay = document.getElementById('current-bin-code');
-const curlExample = document.getElementById('curl-example');
 
 const homeView = document.getElementById('home-view');
 const editorView = document.getElementById('editor-view');
@@ -36,15 +35,13 @@ function showHomeView() {
 function showEditorView() {
   homeView.classList.remove('active');
   editorView.classList.add('active');
-  binCodeDisplay.textContent = currentCode;
+  if (binCodeDisplay) {
+    binCodeDisplay.textContent = currentCode;
+  }
   if (statusBadge) {
     statusBadge.className = 'badge connected';
     statusBadge.textContent = '● Auto-Save Active';
   }
-  
-  // Set up dynamic curl example snippet
-  const origin = window.location.origin;
-  curlExample.textContent = `curl -X POST -d "your content" ${origin}/${currentCode}`;
 }
 
 function goHome() {
@@ -153,12 +150,6 @@ function copyBinContent() {
   navigator.clipboard.writeText(editor.value)
     .then(() => alert('Content copied to clipboard!'))
     .catch(err => console.error('Error copying content:', err));
-}
-
-function copyCurlExample() {
-  navigator.clipboard.writeText(curlExample.textContent)
-    .then(() => alert('Curl command copied to clipboard!'))
-    .catch(err => console.error('Error copying curl command:', err));
 }
 
 // Handle browser navigation

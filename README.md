@@ -1,74 +1,86 @@
 # EasyBin
 
-EasyBin is an instant, real-time over-the-internet clipboard. It allows sharing text/code snippets across devices instantly with a simple 6-character alphanumeric code, using both a clean web interface and CLI tools like `curl`.
-
-## 🚀 Features
-
--   **Browser & CLI Dynamic Routing**: Retrieve raw text via terminal tools (`curl`, `wget`) and an interactive collaborative editor via web browsers on the same URL!
--   **Real-time Collaboration**: WebSocket-based instant updates across all open browser tabs for any specific clipboard.
--   **Case-Insensitive Access**: `ABCDEF` and `abcdef` access the exact same bin.
--   **Lightweight Persistence**: Built on standard Node.js Express and SQLite.
--   **Premium Dark UI**: Glassmorphic dark styling, responsive text area, status sync badges, and interactive copy utilities.
+EasyBin is an instant over-the-internet clipboard. It allows sharing text/code snippets across devices instantly with a simple 6-character alphanumeric code, using both a clean web interface, dedicated CLI tools, and `curl`.
 
 ---
 
-## 💻 CLI Integration (How to Use)
+## ⚡ EasyBin CLI Tool
 
-Since EasyBin handles terminal User-Agents dynamically, you can use it directly with `curl`:
+### Installation
 
-### 1. Create a new Bin
-Send a POST request with the content you want to upload:
+#### Standalone Binary (Linux / macOS / Windows):
+Download standalone executables directly from [GitHub Releases](https://github.com/rishalsha/EasyBin/releases).
+
+**Linux (Ubuntu, Fedora, Arch, Debian):**
 ```bash
-curl -d "Hello from my terminal!" http://localhost:3000/
+sudo curl -sSL https://github.com/rishalsha/EasyBin/releases/latest/download/easybin-linux-x64 -o /usr/local/bin/easybin && sudo chmod +x /usr/local/bin/easybin
+```
+
+**macOS:**
+```bash
+sudo curl -sSL https://github.com/rishalsha/EasyBin/releases/latest/download/easybin-macos-arm64 -o /usr/local/bin/easybin && sudo chmod +x /usr/local/bin/easybin
+```
+
+**Windows:**
+Download `easybin-windows-x64.exe` from GitHub Releases and add it to your PATH.
+
+---
+
+### 💻 CLI Usage
+
+#### 1. Create a Bin
+```bash
+easybin create "Hello from my terminal!"
 ```
 *Output:*
 ```text
-http://localhost:3000/3x9f2a
+✔ Bin created successfully!
+Code: 3x9f2a
+URL:  https://easybin-4w30.onrender.com/3x9f2a
 ```
 
-### 2. Retrieve a Bin
-Perform a GET request to the bin URL:
+#### 2. Copy Bin Content directly to Clipboard
 ```bash
-curl http://localhost:3000/3x9f2a
+easybin copy 3x9f2a
 ```
 *Output:*
 ```text
 Hello from my terminal!
+✔ Copied content to system clipboard!
 ```
 
-### 3. Update an existing Bin
-Send a POST or PUT request to the specific bin URL with the updated content:
+#### 3. Print Content to stdout
 ```bash
-curl -X POST -d "Updated terminal message" http://localhost:3000/3x9f2a
+easybin get 3x9f2a
 ```
-*Output:*
-```text
-Bin 3x9f2a updated
+
+#### 4. Pipe Input
+```bash
+echo "Hello from pipe" | easybin
 ```
 
 ---
 
-## 🛠️ Getting Started
+## 🌐 `curl` Integration (Zero Installation Needed)
+
+```bash
+# Create bin
+curl -d "Hello world" https://easybin-4w30.onrender.com/
+
+# Fetch bin
+curl https://easybin-4w30.onrender.com/3x9f2a
+```
+
+---
+
+## 🛠️ Server Development & Setup
 
 ### Prerequisites
 - Node.js (v18+)
 - npm
 
-### Installation
-1. Clone the repository or navigate to the directory.
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-### Running the Server
-Start the production server:
+### Installation & Execution
 ```bash
+npm install
 npm start
 ```
-Or start in development mode with auto-reload:
-```bash
-npm run dev
-```
-
-The server will be running at [http://localhost:3000](http://localhost:3000). Open this address in your browser to start pasting and sharing text!

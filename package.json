@@ -1,11 +1,15 @@
 {
   "name": "easybin",
   "version": "1.0.0",
-  "description": "An over-the-internet real-time clipboard",
+  "description": "An over-the-internet clipboard and CLI tool",
   "main": "server.js",
+  "bin": {
+    "easybin": "./cli.js"
+  },
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "build:cli": "npx @yao-pkg/pkg cli.js --targets node18-linux-x64,node18-win-x64,node18-macos-x64,node18-macos-arm64 --out-path dist"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
@@ -13,4 +17,3 @@
     "sqlite3": "^5.1.7"
   }
 }
-

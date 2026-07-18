@@ -1,0 +1,92 @@
+name: Build and Release CLI Binaries
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    name: Build & Release Binaries
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Build Standalone Binaries
+        run: |
+          mkdir -p dist
+          npx @yao-pkg/pkg cli.js \
+            --targets node18-linux-x64,node18-win-x64,node18-macos-x64,node18-macos-arm64 \
+            --out-path dist
+
+      - name: Package Release Assets
+        run: |
+          cd dist
+          mv cli-linux easybin-linux-x64
+          mv cli-win.exe easybin-windows-x64.exe
+          mv cli-macos-x64 easybin-macos-x64
+          mv cli-macos-arm64 easybin-macos-arm64
+          
+          chmod +x easybin-linux-x64 easybin-macos-x64 easybin-macos-arm64
+          
+          tar -czvf easybin-linux-x64.tar.gz easybin-linux-x64
+          zip easybin-windows-x64.zip easybin-windows-x64.exe
+          tar -czvf easybin-macos-x64.tar.gz easybin-macos-x64
+          tar -czvf easybin-macos-arm64.tar.gz easybin-macos-arm64
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/easybin-linux-x64.tar.gz
+            dist/easybin-windows-x64.zip
+            dist/easybin-macos-x64.tar.gz
+            dist/easybin-macos-arm64.tar.gz
+            dist/easybin-linux-x64
+            dist/easybin-windows-x64.exe
+            dist/easybin-macos-x64
+            dist/easybin-macos-arm64
+          name: Release ${{ github.ref_name }}
+          body: |
+            ## EasyBin CLI Release ${{ github.ref_name }}
+
+            Standalone CLI binary downloads for Windows, Linux (Ubuntu, Fedora, Arch), and macOS.
+
+            ### Quick Installation
+
+            #### Linux (Ubuntu / Fedora / Arch / Debian):
+            ```bash
+            curl -sSL https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/easybin-linux-x64 -o /usr/local/bin/easybin && chmod +x /usr/local/bin/easybin
+            ```
+
+            #### macOS:
+            ```bash
+            # Intel:
+            curl -sSL https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/easybin-macos-x64 -o /usr/local/bin/easybin && chmod +x /usr/local/bin/easybin
+            # Apple Silicon (M1/M2/M3):
+            curl -sSL https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/easybin-macos-arm64 -o /usr/local/bin/easybin && chmod +x /usr/local/bin/easybin
+            ```
+
+            #### Usage:
+            - `easybin create "hello world"`
+            - `easybin copy <code>`
+            - `easybin get <code>`
+            - `echo "hello" | easybin`
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

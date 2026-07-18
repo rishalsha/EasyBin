@@ -4,7 +4,8 @@ const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const VERSION = '1.0.0';
+const VERSION = '1.0.4';
+
 const DEFAULT_SERVER = (process.env.EASYBIN_SERVER || 'https://easybin-4w30.onrender.com').replace(/\/$/, '');
 
 const args = process.argv.slice(2);

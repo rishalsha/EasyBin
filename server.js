@@ -53,6 +53,12 @@ function generateCode() {
 
 // --- CLI & API HTTP Endpoints ---
 
+// Health check endpoint (used by UptimeRobot / cron services to keep free instance awake)
+app.get('/health', (req, res) => {
+  res.status(200).send('OK\n');
+});
+
+
 // Create a new bin (POST /)
 app.post('/', async (req, res) => {
   try {

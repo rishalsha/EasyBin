@@ -1,13 +1,13 @@
 const express = require('express');
 const http = require('http');
-const WebSocket = require('ws');
 const path = require('path');
 const crypto = require('crypto');
 const db = require('./db');
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+
+
 
 const PORT = process.env.PORT || 3000;
 
@@ -147,14 +147,11 @@ async function handleUpdate(req, res) {
   try {
     const bin = await db.getBin(code);
     if (!bin) {
-      // Create if it doesn't exist (e.g. customized or new path)
       await db.createBin(code, content);
-      broadcastUpdate(code, content);
       return res.status(201).send(`Bin ${code.toLowerCase()} created\n`);
     }
 
     await db.updateBin(code, content);
-    broadcastUpdate(code, content);
     return res.status(200).send(`Bin ${code.toLowerCase()} updated\n`);
   } catch (error) {
     console.error('Error updating bin:', error);
@@ -162,74 +159,26 @@ async function handleUpdate(req, res) {
   }
 }
 
-// --- WebSockets for Real-Time Sync ---
-// Map room (code) -> Set of WebSocket clients
-const rooms = new Map();
+// --- API Endpoint to Fetch Bin Content (JSON) ---
+app.get('/api/bin/:code', async (req, res) => {
+  const { code } = req.params;
+  if (code.length !== 6 || !/^[a-zA-Z0-9]+$/.test(code)) {
+    return res.status(400).json({ error: 'Invalid code format' });
+  }
 
-wss.on('connection', (ws, req) => {
-  let currentRoom = null;
-
-  ws.on('message', async (message) => {
-    try {
-      const data = JSON.parse(message);
-      
-      if (data.type === 'join') {
-        const code = String(data.code).toLowerCase();
-        if (code.length !== 6 || !/^[a-z0-9]+$/.test(code)) {
-          return ws.send(JSON.stringify({ type: 'error', message: 'Invalid bin code' }));
-        }
-
-        currentRoom = code;
-        if (!rooms.has(currentRoom)) {
-          rooms.set(currentRoom, new Set());
-        }
-        rooms.get(currentRoom).add(ws);
-        
-        // Fetch and send initial content
-        const bin = await db.getBin(currentRoom);
-        ws.send(JSON.stringify({
-          type: 'init',
-          content: bin ? bin.content : ''
-        }));
-      }
-
-      if (data.type === 'edit') {
-        if (!currentRoom) return;
-        const content = String(data.content);
-        
-        // Save to Database
-        await db.updateBin(currentRoom, content);
-        
-        // Broadcast to all other clients in the same room
-        broadcastUpdate(currentRoom, content, ws);
-      }
-    } catch (e) {
-      console.error('WS Message handling error:', e);
-    }
-  });
-
-  ws.on('close', () => {
-    if (currentRoom && rooms.has(currentRoom)) {
-      rooms.get(currentRoom).delete(ws);
-      if (rooms.get(currentRoom).size === 0) {
-        rooms.delete(currentRoom);
-      }
-    }
-  });
+  try {
+    const bin = await db.getBin(code);
+    return res.json({
+      code: code.toLowerCase(),
+      content: bin ? bin.content : ''
+    });
+  } catch (error) {
+    console.error('Error fetching bin via API:', error);
+    return res.status(500).json({ error: 'Server error' });
+  }
 });
 
-function broadcastUpdate(room, content, excludeWs = null) {
-  const normalizedRoom = room.toLowerCase();
-  const clients = rooms.get(normalizedRoom);
-  if (clients) {
-    const payload = JSON.stringify({ type: 'update', content });
-    clients.forEach(client => {
-      if (client !== excludeWs && client.readyState === WebSocket.OPEN) {
-        client.send(payload);
-      }
-    });
-  }
-}
+
 
 // Fallback SPA route for browser requests
 app.get('*', (req, res) => {

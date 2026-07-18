@@ -1,4 +1,3 @@
-let ws = null;
 let currentCode = null;
 let saveTimeout = null;
 
@@ -19,7 +18,7 @@ function checkRoute() {
   if (match) {
     currentCode = match[1].toLowerCase();
     showEditorView();
-    connectWebSocket();
+    loadBinContent(currentCode);
   } else {
     showHomeView();
   }
@@ -28,12 +27,20 @@ function checkRoute() {
 function showHomeView() {
   homeView.classList.add('active');
   editorView.classList.remove('active');
+  if (statusBadge) {
+    statusBadge.className = 'badge connected';
+    statusBadge.textContent = '● Ready';
+  }
 }
 
 function showEditorView() {
   homeView.classList.remove('active');
   editorView.classList.add('active');
   binCodeDisplay.textContent = currentCode;
+  if (statusBadge) {
+    statusBadge.className = 'badge connected';
+    statusBadge.textContent = '● Auto-Save Active';
+  }
   
   // Set up dynamic curl example snippet
   const origin = window.location.origin;
@@ -41,12 +48,30 @@ function showEditorView() {
 }
 
 function goHome() {
-  if (ws) {
-    ws.close();
-  }
   currentCode = null;
   window.history.pushState({}, '', '/');
   showHomeView();
+}
+
+async function loadBinContent(code) {
+  saveStatus.textContent = 'Loading...';
+  saveStatus.className = 'save-status saving';
+  try {
+    const res = await fetch(`/api/bin/${code}`);
+    if (res.ok) {
+      const data = await res.json();
+      editor.value = data.content || '';
+      saveStatus.textContent = 'Saved';
+      saveStatus.className = 'save-status';
+    } else {
+      saveStatus.textContent = 'Error loading';
+      saveStatus.className = 'save-status error';
+    }
+  } catch (err) {
+    console.error('Error loading bin:', err);
+    saveStatus.textContent = 'Error loading';
+    saveStatus.className = 'save-status error';
+  }
 }
 
 async function createNewBin() {
@@ -60,7 +85,7 @@ async function createNewBin() {
     currentCode = data.code;
     window.history.pushState({}, '', `/${currentCode}`);
     showEditorView();
-    connectWebSocket();
+    loadBinContent(currentCode);
   } catch (err) {
     console.error(err);
     alert('Failed to create bin. Is the server running?');
@@ -76,88 +101,36 @@ function accessBin() {
   currentCode = input;
   window.history.pushState({}, '', `/${currentCode}`);
   showEditorView();
-  connectWebSocket();
+  loadBinContent(currentCode);
 }
 
-// WS client implementation
-function connectWebSocket() {
-  if (ws) {
-    ws.close();
-  }
-
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//${window.location.host}`;
-  
-  statusBadge.className = 'badge disconnected';
-  statusBadge.textContent = '● Connecting...';
-  
-  ws = new WebSocket(wsUrl);
-
-  ws.onopen = () => {
-    statusBadge.className = 'badge connected';
-    statusBadge.textContent = '● Live Syncing';
-    
-    // Join room
-    ws.send(JSON.stringify({
-      type: 'join',
-      code: currentCode
-    }));
-  };
-
-  ws.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data);
-      
-      if (data.type === 'init') {
-        editor.value = data.content;
-        saveStatus.textContent = 'Saved';
-        saveStatus.className = 'save-status';
-      }
-      
-      if (data.type === 'update') {
-        const start = editor.selectionStart;
-        const end = editor.selectionEnd;
-        editor.value = data.content;
-        // Keep selection range
-        editor.setSelectionRange(start, end);
-        
-        saveStatus.textContent = 'Updated';
-        saveStatus.className = 'save-status';
-      }
-
-      if (data.type === 'error') {
-        console.error('Server error:', data.message);
-      }
-    } catch (e) {
-      console.error('Error handling WebSocket message:', e);
-    }
-  };
-
-  ws.onclose = () => {
-    statusBadge.className = 'badge disconnected';
-    statusBadge.textContent = '● Disconnected';
-    // Reconnect in 3 seconds if we're still viewing a bin
-    if (currentCode) {
-      setTimeout(connectWebSocket, 3000);
-    }
-  };
-}
-
-// Handle Editor Input with Debouncing
+// Handle Editor Input with HTTP Auto-Save Debouncing
 editor.addEventListener('input', () => {
-  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  if (!currentCode) return;
 
   saveStatus.textContent = 'Saving...';
   saveStatus.className = 'save-status saving';
 
   clearTimeout(saveTimeout);
-  saveTimeout = setTimeout(() => {
-    ws.send(JSON.stringify({
-      type: 'edit',
-      content: editor.value
-    }));
-    saveStatus.textContent = 'Saved';
-    saveStatus.className = 'save-status';
+  saveTimeout = setTimeout(async () => {
+    try {
+      const res = await fetch(`/${currentCode}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: editor.value })
+      });
+      if (res.ok) {
+        saveStatus.textContent = 'Saved';
+        saveStatus.className = 'save-status';
+      } else {
+        saveStatus.textContent = 'Save failed';
+        saveStatus.className = 'save-status error';
+      }
+    } catch (err) {
+      console.error('Auto-save error:', err);
+      saveStatus.textContent = 'Save failed';
+      saveStatus.className = 'save-status error';
+    }
   }, 400); // 400ms debounce
 });
 

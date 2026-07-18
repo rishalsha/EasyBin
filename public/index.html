@@ -18,7 +18,7 @@
         <h1>EasyBin</h1>
       </div>
       <div class="header-actions">
-        <div id="status-badge" class="badge disconnected">● Connecting...</div>
+        <div id="status-badge" class="badge connected">● Ready</div>
       </div>
     </header>
 
@@ -26,7 +26,7 @@
       <!-- HOME VIEW -->
       <section id="home-view" class="view active">
         <div class="hero">
-          <h2>An Instant, Real-Time Clipboard.</h2>
+          <h2>An Instant Over-the-Internet Clipboard.</h2>
           <p>Paste text here to instantly share across devices, or enter a bin code below.</p>
         </div>
 
@@ -34,7 +34,7 @@
           <div class="card create-card">
             <div class="card-info">
               <h3>Create a New Bin</h3>
-              <p class="card-desc">Instantly spawn a fresh, collaborative clipboard bin and start typing.</p>
+              <p class="card-desc">Instantly spawn a fresh clipboard bin and start typing.</p>
             </div>
             <button class="btn btn-primary" onclick="createNewBin()">Create Instant Bin</button>
           </div>
@@ -68,7 +68,7 @@
         </div>
 
         <div class="editor-container">
-          <textarea id="editor" placeholder="Start typing here... changes will sync in real-time across all connected devices." autofocus></textarea>
+          <textarea id="editor" placeholder="Start typing here... changes are auto-saved as you type." autofocus></textarea>
         </div>
 
         <div class="cli-instructions">
@@ -83,8 +83,9 @@
     </main>
 
     <footer>
-      <p>EasyBin — Built for speed and simplicity. Backed by real-time WebSockets.</p>
+      <p>EasyBin — Built for speed and simplicity with HTTP auto-saving.</p>
     </footer>
+
   </div>
 
   <script src="/js/app.js"></script>

@@ -231,6 +231,15 @@ function broadcastUpdate(room, content, excludeWs = null) {
   }
 }
 
+// Fallback SPA route for browser requests
+app.get('*', (req, res) => {
+  if (isCliRequest(req)) {
+    return res.status(404).send('Not Found\n');
+  }
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 server.listen(PORT, () => {
   console.log(`EasyBin running at http://localhost:${PORT}`);
 });
+

@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 const { exec } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
 const VERSION = '1.0.0';
 const DEFAULT_SERVER = (process.env.EASYBIN_SERVER || 'https://easybin-4w30.onrender.com').replace(/\/$/, '');
@@ -54,6 +56,29 @@ function pasteFromClipboard(callback) {
   });
 }
 
+function isTextFile(filePath) {
+  try {
+    if (!filePath || typeof filePath !== 'string') return false;
+    if (!fs.existsSync(filePath)) return false;
+    const stat = fs.statSync(filePath);
+    return stat.isFile();
+  } catch (err) {
+    return false;
+  }
+}
+
+async function handleFileCreation(filePath) {
+  try {
+    const fullPath = path.resolve(filePath);
+    const content = fs.readFileSync(fullPath, 'utf-8');
+    const filename = path.basename(fullPath);
+    await createBin(content, filename);
+  } catch (err) {
+    console.error(`Error reading file '${filePath}':`, err.message);
+    process.exit(1);
+  }
+}
+
 function showVersion() {
   console.log(`easybin v${VERSION}`);
   process.exit(0);
@@ -64,17 +89,22 @@ function showHelp() {
 EasyBin CLI Tool (v${VERSION})
 
 Usage:
-  easybin create "<text>"         Create a new bin with text (alias: c, -c, new, -n)
+  easybin <filename>             Upload file content (.c, .txt, .py, .js, etc.)
+  easybin create "<text>"         Create a new bin with text or file (alias: c, -c, new, -n)
   easybin copy <code>            Fetch bin content & copy to clipboard (alias: cp, -y)
   easybin get <code>             Print bin content to terminal stdout (alias: g, -g)
   easybin <code>                 Fetch bin content to terminal output (shortcut)
   easybin -p, --paste            Upload text directly from system clipboard (alias: paste)
+  easybin completion             Output bash/zsh autocomplete script
   echo "text" | easybin          Upload from piped stdin
   easybin -v, --version          Show version
   easybin -h, --help             Show this help menu
 
-Short Flags & Examples:
-  easybin c "Hello World"        Quick create bin
+Examples:
+  easybin main.c                 Upload C source code file
+  easybin script.py              Upload Python script file
+  easybin notes.txt              Upload text document file
+  easybin c "Hello World"        Quick create bin from text string
   easybin cp 3x9f2a              Fetch & copy to system clipboard
   easybin g 3x9f2a               Print bin content
   easybin -p                     Create bin from system clipboard
@@ -82,9 +112,39 @@ Short Flags & Examples:
   process.exit(0);
 }
 
+function showCompletion() {
+  console.log(`
+# EasyBin Bash/Zsh Tab Autocompletion Script
+# Add to ~/.bashrc or ~/.zshrc: eval "$(easybin completion)"
+
+_easybin_completion() {
+  local cur prev opts
+  COMPREPLY=()
+  cur="\${COMP_WORDS[COMP_CWORD]}"
+  prev="\${COMP_WORDS[COMP_CWORD-1]}"
+  opts="create copy get paste completion -p -v --version -h --help"
+
+  if [[ \${cur} == -* ]] ; then
+    COMPREPLY=( $(compgen -W "\${opts}" -- \${cur}) )
+    return 0
+  fi
+
+  case "\${prev}" in
+    create|c|-c|new|-n|easybin)
+      COMPREPLY=( $(compgen -f -- \${cur}) )
+      return 0
+      ;;
+  esac
+
+  COMPREPLY=( $(compgen -f -- \${cur}) )
+}
+complete -F _easybin_completion easybin
+  `);
+  process.exit(0);
+}
 
 // Create a new bin
-async function createBin(content) {
+async function createBin(content, fileLabel = null) {
   try {
     const res = await fetch(`${DEFAULT_SERVER}/`, {
       method: 'POST',
@@ -104,7 +164,11 @@ async function createBin(content) {
     const url = text.trim();
     const code = url.split('/').pop();
 
-    console.log(`✔ Bin created successfully!`);
+    if (fileLabel) {
+      console.log(`✔ Bin created successfully from file '${fileLabel}'!`);
+    } else {
+      console.log(`✔ Bin created successfully!`);
+    }
     console.log(`Code: ${code}`);
     console.log(`URL:  ${url}`);
   } catch (err) {
@@ -117,7 +181,7 @@ async function createBin(content) {
 async function getBin(code, shouldCopy = false) {
   const cleanCode = code.toLowerCase().trim();
   if (cleanCode.length !== 6 || !/^[a-z0-9]+$/.test(cleanCode)) {
-    console.error(`Error: '${code}' is not a valid 6-character code.`);
+    console.error(`Error: '${code}' is not a valid 6-character code or file.`);
     process.exit(1);
   }
 
@@ -178,30 +242,46 @@ async function main() {
     showVersion();
   }
 
-  // Create commands: create, c, -c, new, -n
+  if (command === 'completion' || command === '--completion') {
+    showCompletion();
+  }
+
+  // 1. Direct file upload: easybin main.c or easybin notes.txt
+  if (isTextFile(command)) {
+    await handleFileCreation(command);
+    return;
+  }
+
+  // 2. Create commands: create, c, -c, new, -n
   if (['create', 'c', '-c', 'new', '-n'].includes(command)) {
+    const arg2 = args[1];
+    if (arg2 && isTextFile(arg2)) {
+      await handleFileCreation(arg2);
+      return;
+    }
+
     const text = args.slice(1).join(' ');
     if (!text) {
-      console.error('Error: Please specify text to create a bin. Example: easybin c "hello world"');
+      console.error('Error: Please specify text or a filename. Example: easybin main.c or easybin c "hello world"');
       process.exit(1);
     }
     await createBin(text);
     return;
   }
 
-  // Copy commands: copy, cp, -y
+  // 3. Copy commands: copy, cp, -y
   if (['copy', 'cp', '-y'].includes(command) && args[1]) {
     await getBin(args[1], true);
     return;
   }
 
-  // Get commands: get, g, -g
+  // 4. Get commands: get, g, -g
   if (['get', 'g', '-g'].includes(command) && args[1]) {
     await getBin(args[1], false);
     return;
   }
 
-  // Paste from system clipboard commands: paste, -p, --paste
+  // 5. Paste from system clipboard commands: paste, -p, --paste
   if (['paste', '-p', '--paste'].includes(command)) {
     pasteFromClipboard(async (text) => {
       if (!text) {
@@ -213,7 +293,7 @@ async function main() {
     return;
   }
 
-  // Direct 6-character code lookup: easybin 3x9f2a or easybin 3x9f2a -c
+  // 6. Direct 6-character code lookup: easybin 3x9f2a or easybin 3x9f2a -c
   if (command && command.length === 6 && /^[a-zA-Z0-9]+$/.test(command)) {
     const shouldCopy = args.includes('-c') || args.includes('--copy') || args.includes('-y');
     await getBin(command, shouldCopy);

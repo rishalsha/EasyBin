@@ -24,16 +24,24 @@ sudo curl -sSL https://github.com/rishalsha/EasyBin/releases/latest/download/eas
 **Windows:**
 Download `easybin-windows-x64.exe` from GitHub Releases and add it to your PATH.
 
+#### Enable Tab Autocompletion (Bash / Zsh):
+Add tab autocompletion for filenames and commands by adding this to your `~.bashrc` or `~/.zshrc`:
+```bash
+eval "$(easybin completion)"
+```
+
 ---
 
 ### 💻 CLI Commands & Short Flags
 
 | Operation | Commands / Aliases / Short Flags | Example |
 | :--- | :--- | :--- |
+| **Upload File** | `easybin <filename>` (.c, .txt, .py, etc.) | `easybin main.c` |
 | **Create Bin** | `create`, `c`, `-c`, `new`, `-n` | `easybin c "hello world"` |
 | **Copy to Clipboard** | `copy`, `cp`, `-y` | `easybin cp 3x9f2a` |
 | **Get (stdout)** | `get`, `g`, `-g` | `easybin g 3x9f2a` |
 | **Paste from Clipboard** | `paste`, `-p`, `--paste` | `easybin -p` |
+| **Tab Completion** | `completion` | `eval "$(easybin completion)"` |
 | **Piped Upload** | `echo "..." \| easybin` | `echo "hi" \| easybin` |
 | **Version** | `-v`, `--version` | `easybin -v` |
 | **Help** | `-h`, `--help` | `easybin -h` |

@@ -78,12 +78,10 @@ Short Flags & Examples:
   easybin cp 3x9f2a              Fetch & copy to system clipboard
   easybin g 3x9f2a               Print bin content
   easybin -p                     Create bin from system clipboard
-
-Environment Variables:
-  EASYBIN_SERVER                 Custom backend URL (default: ${DEFAULT_SERVER})
   `);
   process.exit(0);
 }
+
 
 // Create a new bin
 async function createBin(content) {

@@ -2,6 +2,7 @@
 
 const { exec } = require('child_process');
 
+const VERSION = '1.0.0';
 const DEFAULT_SERVER = (process.env.EASYBIN_SERVER || 'https://easybin-4w30.onrender.com').replace(/\/$/, '');
 
 const args = process.argv.slice(2);
@@ -53,18 +54,30 @@ function pasteFromClipboard(callback) {
   });
 }
 
+function showVersion() {
+  console.log(`easybin v${VERSION}`);
+  process.exit(0);
+}
+
 function showHelp() {
   console.log(`
-EasyBin CLI Tool
+EasyBin CLI Tool (v${VERSION})
 
 Usage:
-  easybin create "<text>"         Create a new bin with text and return code & URL
-  easybin copy <code>            Fetch bin content and copy directly to clipboard
-  easybin get <code>             Print bin content to terminal output
+  easybin create "<text>"         Create a new bin with text (alias: c, -c, new, -n)
+  easybin copy <code>            Fetch bin content & copy to clipboard (alias: cp, -y)
+  easybin get <code>             Print bin content to terminal stdout (alias: g, -g)
   easybin <code>                 Fetch bin content to terminal output (shortcut)
-  easybin -p, --paste            Upload text from system clipboard
+  easybin -p, --paste            Upload text directly from system clipboard (alias: paste)
   echo "text" | easybin          Upload from piped stdin
-  easybin --help                 Show this help menu
+  easybin -v, --version          Show version
+  easybin -h, --help             Show this help menu
+
+Short Flags & Examples:
+  easybin c "Hello World"        Quick create bin
+  easybin cp 3x9f2a              Fetch & copy to system clipboard
+  easybin g 3x9f2a               Print bin content
+  easybin -p                     Create bin from system clipboard
 
 Environment Variables:
   EASYBIN_SERVER                 Custom backend URL (default: ${DEFAULT_SERVER})
@@ -79,7 +92,7 @@ async function createBin(content) {
       method: 'POST',
       headers: {
         'Content-Type': 'text/plain',
-        'User-Agent': 'easybin-cli/1.0.0'
+        'User-Agent': `easybin-cli/${VERSION}`
       },
       body: content
     });
@@ -114,7 +127,7 @@ async function getBin(code, shouldCopy = false) {
     const res = await fetch(`${DEFAULT_SERVER}/${cleanCode}`, {
       headers: {
         'Accept': 'text/plain',
-        'User-Agent': 'easybin-cli/1.0.0'
+        'User-Agent': `easybin-cli/${VERSION}`
       }
     });
 
@@ -161,18 +174,37 @@ async function main() {
 
   if (args.length === 0 || command === '-h' || command === '--help' || command === 'help') {
     showHelp();
-  } else if (command === 'create') {
+  }
+
+  if (command === '-v' || command === '--version' || command === 'version') {
+    showVersion();
+  }
+
+  // Create commands: create, c, -c, new, -n
+  if (['create', 'c', '-c', 'new', '-n'].includes(command)) {
     const text = args.slice(1).join(' ');
     if (!text) {
-      console.error('Error: Please specify text to create a bin. Example: easybin create "hello world"');
+      console.error('Error: Please specify text to create a bin. Example: easybin c "hello world"');
       process.exit(1);
     }
     await createBin(text);
-  } else if (command === 'copy' && args[1]) {
+    return;
+  }
+
+  // Copy commands: copy, cp, -y
+  if (['copy', 'cp', '-y'].includes(command) && args[1]) {
     await getBin(args[1], true);
-  } else if (command === 'get' && args[1]) {
+    return;
+  }
+
+  // Get commands: get, g, -g
+  if (['get', 'g', '-g'].includes(command) && args[1]) {
     await getBin(args[1], false);
-  } else if (command === '-p' || command === '--paste') {
+    return;
+  }
+
+  // Paste from system clipboard commands: paste, -p, --paste
+  if (['paste', '-p', '--paste'].includes(command)) {
     pasteFromClipboard(async (text) => {
       if (!text) {
         console.error('Clipboard is empty.');
@@ -180,12 +212,17 @@ async function main() {
       }
       await createBin(text);
     });
-  } else if (command && command.length === 6 && /^[a-zA-Z0-9]+$/.test(command)) {
-    const shouldCopy = args.includes('-c') || args.includes('--copy');
-    await getBin(command, shouldCopy);
-  } else {
-    showHelp();
+    return;
   }
+
+  // Direct 6-character code lookup: easybin 3x9f2a or easybin 3x9f2a -c
+  if (command && command.length === 6 && /^[a-zA-Z0-9]+$/.test(command)) {
+    const shouldCopy = args.includes('-c') || args.includes('--copy') || args.includes('-y');
+    await getBin(command, shouldCopy);
+    return;
+  }
+
+  showHelp();
 }
 
 main();

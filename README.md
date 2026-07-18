@@ -26,38 +26,17 @@ Download `easybin-windows-x64.exe` from GitHub Releases and add it to your PATH.
 
 ---
 
-### 💻 CLI Usage
+### 💻 CLI Commands & Short Flags
 
-#### 1. Create a Bin
-```bash
-easybin create "Hello from my terminal!"
-```
-*Output:*
-```text
-✔ Bin created successfully!
-Code: 3x9f2a
-URL:  https://easybin-4w30.onrender.com/3x9f2a
-```
-
-#### 2. Copy Bin Content directly to Clipboard
-```bash
-easybin copy 3x9f2a
-```
-*Output:*
-```text
-Hello from my terminal!
-✔ Copied content to system clipboard!
-```
-
-#### 3. Print Content to stdout
-```bash
-easybin get 3x9f2a
-```
-
-#### 4. Pipe Input
-```bash
-echo "Hello from pipe" | easybin
-```
+| Operation | Commands / Aliases / Short Flags | Example |
+| :--- | :--- | :--- |
+| **Create Bin** | `create`, `c`, `-c`, `new`, `-n` | `easybin c "hello world"` |
+| **Copy to Clipboard** | `copy`, `cp`, `-y` | `easybin cp 3x9f2a` |
+| **Get (stdout)** | `get`, `g`, `-g` | `easybin g 3x9f2a` |
+| **Paste from Clipboard** | `paste`, `-p`, `--paste` | `easybin -p` |
+| **Piped Upload** | `echo "..." \| easybin` | `echo "hi" \| easybin` |
+| **Version** | `-v`, `--version` | `easybin -v` |
+| **Help** | `-h`, `--help` | `easybin -h` |
 
 ---
 
